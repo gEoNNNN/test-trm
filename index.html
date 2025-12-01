@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>AR Escape Room - Lab Project</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+
+  <!-- A-Frame -->
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+  <!-- AR.js for NFT markers -->
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar-nft.js"></script>
+
+  <style>
+    body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    
+    /* Message overlay */
+    .message-overlay {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.85);
+      color: white;
+      padding: 20px 30px;
+      border-radius: 15px;
+      z-index: 1000;
+      max-width: 80%;
+      text-align: center;
+      font-size: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      display: none;
+    }
+
+    .message-overlay.show {
+      display: block;
+      animation: slideDown 0.3s ease-out;
+    }
+
+    @keyframes slideDown {
+      from { transform: translateX(-50%) translateY(-30px); opacity: 0; }
+      to { transform: translateX(-50%) translateY(0); opacity: 1; }
+    }
+
+    /* Progress tracker */
+    .progress-bar {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.7);
+      padding: 15px 25px;
+      border-radius: 25px;
+      z-index: 999;
+      display: flex;
+      gap: 10px;
+    }
+
+    .marker-indicator {
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+      transition: all 0.3s ease;
+    }
+
+    .marker-indicator.active {
+      background: #4CAF50;
+      box-shadow: 0 0 10px #4CAF50;
+    }
+
+    /* Puzzle modal */
+    .puzzle-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 2000;
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .puzzle-modal.show {
+      display: flex;
+    }
+
+    .puzzle-content {
+      background: white;
+      padding: 30px;
+      border-radius: 20px;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .puzzle-content h2 {
+      margin-top: 0;
+      color: #333;
+    }
+
+    .puzzle-content input {
+      width: 100%;
+      padding: 10px;
+      margin: 15px 0;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    .puzzle-content button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 5px;
+    }
+
+    .puzzle-content button:hover {
+      background: #45a049;
+    }
+
+    .puzzle-content button.cancel {
+      background: #f44336;
+    }
+
+    .puzzle-content button.cancel:hover {
+      background: #da190b;
+    }
+
+    /* Loading screen */
+    .loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 3000;
+    }
+
+    .loading-screen.hide {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Loading Screen -->
+  <div class="loading-screen" id="loadingScreen">
+    <h1>🔐 AR Escape Room</h1>
+    <p>Loading AR experience...</p>
+  </div>
+
+  <!-- Message Overlay -->
+  <div class="message-overlay" id="messageOverlay"></div>
+
+  <!-- Progress Bar -->
+  <div class="progress-bar" id="progressBar">
+    <div class="marker-indicator" data-marker="marker1"></div>
+    <div class="marker-indicator" data-marker="marker2"></div>
+    <div class="marker-indicator" data-marker="marker3"></div>
+    <div class="marker-indicator" data-marker="marker4"></div>
+    <div class="marker-indicator" data-marker="marker5"></div>
+    <div class="marker-indicator" data-marker="marker6"></div>
+    <div class="marker-indicator" data-marker="marker7"></div>
+  </div>
+
+  <!-- Puzzle Modal -->
+  <div class="puzzle-modal" id="puzzleModal">
+    <div class="puzzle-content">
+      <h2 id="puzzleTitle">Puzzle</h2>
+      <p id="puzzleQuestion"></p>
+      <input type="text" id="puzzleAnswer" placeholder="Enter your answer">
+      <div>
+        <button onclick="submitPuzzle()">Submit</button>
+        <button class="cancel" onclick="closePuzzle()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AR Scene -->
+  <a-scene
+    vr-mode-ui="enabled: false"
+    renderer="logarithmicDepthBuffer: true; precision: medium;"
+    embedded
+    arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;">
+
+    <!-- Camera -->
+    <a-entity camera></a-entity>
+
+    <!-- NFT Marker 1 - Map -->
+    <a-nft
+      id="marker1"
+      type="nft"
+      url="markers/map"
+      smooth="true"
+      smoothCount="10"
+      smoothTolerance="0.01"
+      smoothThreshold="5">
+      
+      <!-- 3D Object for Marker 1 - Ancient Map -->
+      <a-entity 
+        id="obj1"
+        gltf-model="url(assets/wizard.glb)"
+        position="50 -400 0" 
+        rotation="-75 0 0"
+        scale="80 80 80"
+      </a-entity>
+    </a-nft>
+
+    <!-- NFT Marker 2 - Book -->
+    <a-nft
+      id="marker2"
+      type="nft"
+      url="markers/book"
+      smooth="true"
+      smoothCount="10"
+      smoothTolerance="0.01"
+      smoothThreshold="5">
+      
+      <!-- 3D Object for Marker 2 - Legendary Book -->
+      <a-entity 
+        id="obj2"
+        gltf-model="url(assets/fallen_book.glb)"
+        position="50 -400 0" 
+        rotation="-75 0 0"
+        scale="7 7 7"
+        visible="false">
+      </a-entity>
+      <a-text 
+        value="📖 LEGENDARY BOOK" 
+        position="0 1.5 0" 
+        align="center" 
+        color="#8B4513"
+        scale="2 2 2"
+        visible="false">
+      </a-text>
+    </a-nft>
+
+    <!-- NFT Marker 3 - Crossbow -->
+    <a-nft
+      id="marker3"
+      type="nft"
+      url="markers/crossbow"
+      smooth="true"
+      smoothCount="10"
+      smoothTolerance="0.01"
+      smoothThreshold="5">
+      
+      <!-- 3D Object for Marker 3 - Crossbow -->
+      <a-entity 
+        id="obj3"
+        gltf-model="url(assets/crossbow.glb)"
+        position="20 -600 0" 
+        rotation="-75 0 0"
+        scale="1 1 1"
+        visible="false">
+      </a-entity>
+      <a-text 
+        value="🏹 CROSSBOW" 
+        position="0 1.5 0" 
+        align="center" 
+        color="#654321"
+        scale="2 2 2"
+        visible="false">
+      </a-text>
+    </a-nft>
+
+    <!-- NFT Marker 4 - Cauldron -->
+    <a-nft
+      id="marker4"
+      type="nft"
+      url="markers/cauldron"
+      smooth="true"
+      smoothCount="10"
+      smoothTolerance="0.01"
+      smoothThreshold="5">
+      
+      <!-- 3D Object for Marker 4 - Brewing Cauldron -->
+      <a-entity 
+        id="obj4"
+        gltf-model="url(assets/cauldron.glb)"
+        position="150 -200 0" 
+        rotation="-75 0 0"
+        scale="80 80 80"
+        visible="false">
+      </a-entity>
+      <a-text 
+        value="🔮 CAULDRON" 
+        position="0 1.5 0" 
+        align="center" 
+        color="#9B59B6"
+        scale="2 2 2"
+        visible="false">
+      </a-text>
+    </a-nft>
+
+    <!-- NFT Marker 5 - Dragon -->
+    <a-nft
+      id="marker5"
+      type="nft"
+      url="markers/dragon"
+      smooth="true"
+      smoothCount="10"
+      smoothTolerance="0.01"
+      smoothThreshold="5">
+      
+      <!-- 3D Object for Marker 5 - Dragon -->
+      <a-entity 
+        id="obj5"
+        gltf-model="url(assets/dragon.glb)"
+        position="50 -400 0" 
+        rotation="-90 0 0"
+        scale="30 30 30"
+        visible="false">
+      </a-entity>
+      <a-text 
+        value="🐉 DRAGON" 
+        position="0 1.5 0" 
+        align="center" 
+        color="#FF4500"
+        scale="2 2 2"
+        visible="false">
+      </a-text>
+    </a-nft>
+
+    <!-- NFT Marker 6 - Sword -->
+    <a-nft
+      id="marker6"
+      type="nft"
+      url="markers/sword"
+      smooth="true"
+      smoothCount="10"
+      smoothTolerance="0.01"
+      smoothThreshold="5">
+      
+      <!-- 3D Object for Marker 6 - Great Sword -->
+      <a-entity 
+        id="obj6"
+        gltf-model="url(assets/sword.glb)"
+        position="-80 -400 0" 
+        rotation="-75 0 0"
+        scale="70 70 70"
+        visible="false">
+      </a-entity>
+      <a-text 
+        value="⚔️ GREAT SWORD" 
+        position="0 1.5 0" 
+        align="center" 
+        color="#FFD700"
+        scale="2 2 2"
+        visible="false">
+      </a-text>
+    </a-nft>
+
+    <!-- NFT Marker 7 - Throne -->
+    <a-nft
+      id="marker7"
+      type="nft"
+      url="markers/throne"
+      smooth="true"
+      smoothCount="10"
+      smoothTolerance="0.01"
+      smoothThreshold="5">
+      
+      <!-- 3D Object for Marker 7 - Dragon Slayer Throne -->
+      <a-entity 
+        id="obj7"
+        gltf-model="url(assets/throne.glb)"
+        position="50 -300 0" 
+        rotation="-75 0 0"
+        scale="40 40 40"
+        visible="false">
+      </a-entity>
+      <a-text 
+        value="👑 THRONE" 
+        position="0 1.5 0" 
+        align="center" 
+        color="#FFD700"
+        scale="2 2 2"
+        visible="false">
+      </a-text>
+    </a-nft>
+  </a-scene>
+
+  <script>
+    // Game state
+    const gameState = {
+      scannedMarkers: new Set(),
+      currentSequence: ['marker1', 'marker2', 'marker3', 'marker4', 'marker5', 'marker6', 'marker7'],
+      puzzles: {
+        marker1: {
+          question: "I show the way but never move. What am I?",
+          answer: "map",
+          hint: "Navigate with me..."
+        },
+        marker2: {
+          question: "Pages of power, ancient and wise. What holds the dragon recipe inside?",
+          answer: "book",
+          hint: "Knowledge is written here..."
+        },
+        marker3: {
+          question: "Silent and deadly, I strike from afar. A dragon hunter's tool. What am I?",
+          answer: "crossbow",
+          hint: "A ranged weapon..."
+        },
+        marker4: {
+          question: "Bubbling and brewing, a potion takes form. What vessel am I?",
+          answer: "cauldron",
+          hint: "Witches use me..."
+        },
+        marker5: {
+          question: "Fire-breathing beast with scales of might. What legendary creature am I?",
+          answer: "dragon",
+          hint: "I guard treasure..."
+        },
+        marker6: {
+          question: "Forged in battle, a blade of legend. What weapon drops from the dragon?",
+          answer: "sword",
+          hint: "A warrior's prize..."
+        },
+        marker7: {
+          question: "Where heroes sit after victory is won. What seat of power awaits?",
+          answer: "throne",
+          hint: "A king's seat..."
+        }
+      },
+      currentPuzzle: null,
+      markerOrder: []
+    };
+
+    // Wait for scene to load
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        document.getElementById('loadingScreen').classList.add('hide');
+        showMessage("🧙 A wise wizard awaits with tales of legend...", 3000);
+      }, 2000);
+    });
+
+    // Marker detection handlers
+    const markers = ['marker1', 'marker2', 'marker3', 'marker4', 'marker5', 'marker6', 'marker7'];
+    
+    markers.forEach(markerId => {
+      const markerEl = document.getElementById(markerId);
+      
+      markerEl.addEventListener('markerFound', () => {
+        console.log(`${markerId} found`);
+        handleMarkerFound(markerId);
+      });
+
+      markerEl.addEventListener('markerLost', () => {
+        console.log(`${markerId} lost`);
+      });
+    });
+
+    function handleMarkerFound(markerId) {
+      // Check if already scanned
+      if (gameState.scannedMarkers.has(markerId)) {
+        showMessage("✓ Already scanned!", 2000);
+        return;
+      }
+
+      // Check if it's the correct sequence
+      const expectedNext = gameState.currentSequence[gameState.scannedMarkers.size];
+      
+      if (markerId !== expectedNext) {
+        showMessage(`❌ Wrong marker! Scan in the correct order.`, 2500);
+        return;
+      }
+
+      // Unlock marker immediately without puzzle
+      gameState.scannedMarkers.add(markerId);
+      gameState.markerOrder.push(markerId);
+      
+      // Update progress bar
+      updateProgressBar(markerId);
+      
+      // Show the 3D object
+      revealMarkerObject(markerId);
+      
+      // Show success message
+      showMessage(`✓ ${getMarkerName(markerId)} unlocked!`, 2000);
+      
+      // Check if game is complete
+      if (gameState.scannedMarkers.size === 7) {
+        setTimeout(() => {
+          showMessage("🎉 Victory! You are the Dragon Slayer! 👑🐉⚔️", 5000);
+        }, 2500);
+      } else {
+        // Show cryptic hint for next marker
+        setTimeout(() => {
+          const hints = {
+            'marker1': '📜 "Seek the ancient tome where dragon secrets are written..."',
+            'marker2': '🎯 "A hunter needs a weapon that strikes from afar..."',
+            'marker3': '🧪 "To summon the beast, brew the mystic elixir..."',
+            'marker4': '🐉 "The potion is ready. The dragon awaits your challenge..."',
+            'marker5': '⚔️ "From the fallen beast, claim your legendary reward..."',
+            'marker6': '👑 "The victor\'s seat awaits. Take your rightful throne..."'
+          };
+          const nextHint = hints[markerId];
+          if (nextHint) {
+            showMessage(nextHint, 4000);
+          }
+        }, 2500);
+      }
+    }
+
+    function showPuzzle(markerId) {
+      const puzzle = gameState.puzzles[markerId];
+      document.getElementById('puzzleTitle').textContent = `Puzzle: ${getMarkerName(markerId)}`;
+      document.getElementById('puzzleQuestion').textContent = puzzle.question;
+      document.getElementById('puzzleAnswer').value = '';
+      document.getElementById('puzzleModal').classList.add('show');
+    }
+
+    function closePuzzle() {
+      document.getElementById('puzzleModal').classList.remove('show');
+      gameState.currentPuzzle = null;
+    }
+
+    function submitPuzzle() {
+      const markerId = gameState.currentPuzzle;
+      const userAnswer = document.getElementById('puzzleAnswer').value.trim().toLowerCase();
+      const correctAnswer = gameState.puzzles[markerId].answer.toLowerCase();
+
+      if (userAnswer === correctAnswer) {
+        // Correct answer!
+        gameState.scannedMarkers.add(markerId);
+        gameState.markerOrder.push(markerId);
+        closePuzzle();
+        
+        // Update progress bar
+        updateProgressBar(markerId);
+        
+        // Show the 3D object
+        revealMarkerObject(markerId);
+        
+        // Show success message
+        showMessage(`✓ Correct! ${getMarkerName(markerId)} unlocked!`, 3000);
+        
+        // Check if game is complete
+        if (gameState.scannedMarkers.size === 7) {
+          setTimeout(() => {
+            showMessage("🎉 Victory! You are the Dragon Slayer! 👑🐉⚔️", 5000);
+          }, 3000);
+        } else {
+          setTimeout(() => {
+            showMessage(`Next: Scan ${getMarkerName(gameState.currentSequence[gameState.scannedMarkers.size])}`, 3000);
+          }, 3500);
+        }
+      } else {
+        // Wrong answer
+        showMessage(`❌ Wrong answer! Hint: ${gameState.puzzles[markerId].hint}`, 3000);
+      }
+    }
+
+    function revealMarkerObject(markerId) {
+      // Make all child entities visible
+      const markerEl = document.getElementById(markerId);
+      const entities = markerEl.querySelectorAll('a-entity, a-text');
+      entities.forEach(el => {
+        el.setAttribute('visible', 'true');
+      });
+    }
+
+    function updateProgressBar(markerId) {
+      const indicator = document.querySelector(`.marker-indicator[data-marker="${markerId}"]`);
+      if (indicator) {
+        indicator.classList.add('active');
+      }
+    }
+
+    function showMessage(text, duration = 2000) {
+      const overlay = document.getElementById('messageOverlay');
+      overlay.textContent = text;
+      overlay.classList.add('show');
+      
+      setTimeout(() => {
+        overlay.classList.remove('show');
+      }, duration);
+    }
+
+    function getMarkerName(markerId) {
+      const names = {
+        'marker1': '🗺️ Ancient Map',
+        'marker2': '📖 Legendary Book',
+        'marker3': '🏹 Crossbow',
+        'marker4': '🔮 Cauldron',
+        'marker5': '🐉 Dragon',
+        'marker6': '⚔️ Great Sword',
+        'marker7': '👑 Throne'
+      };
+      return names[markerId] || markerId;
+    }
+
+    // Allow Enter key in puzzle input
+    document.getElementById('puzzleAnswer')?.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        submitPuzzle();
+      }
+    });
+  </script>
+</body>
+</html>
