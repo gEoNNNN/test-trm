@@ -399,39 +399,39 @@
       currentSequence: ['marker1', 'marker2', 'marker3', 'marker4', 'marker5', 'marker6', 'marker7'],
       puzzles: {
         marker1: {
-          question: "I show the way but never move. What am I?",
-          answer: "map",
-          hint: "Navigate with me..."
+          question: "Arăt drumul dar nu mă mișc niciodată. Ce sunt eu?",
+          answer: "harta",
+          hint: "Navighează cu mine..."
         },
         marker2: {
-          question: "Pages of power, ancient and wise. What holds the dragon recipe inside?",
-          answer: "book",
-          hint: "Knowledge is written here..."
+          question: "Pagini de putere, străvechi și înțelepte. Ce ține rețeta dragonului înăuntru?",
+          answer: "carte",
+          hint: "Cunoașterea este scrisă aici..."
         },
         marker3: {
-          question: "Silent and deadly, I strike from afar. A dragon hunter's tool. What am I?",
-          answer: "crossbow",
-          hint: "A ranged weapon..."
+          question: "Tăcut și mortal, lovesc de la distanță. Unealta unui vânător de dragoni. Ce sunt eu?",
+          answer: "arbaleta",
+          hint: "O armă de la distanță..."
         },
         marker4: {
-          question: "Bubbling and brewing, a potion takes form. What vessel am I?",
-          answer: "cauldron",
-          hint: "Witches use me..."
+          question: "Fac bule și fierb, o poțiune prinde formă. Ce vas sunt eu?",
+          answer: "cazan",
+          hint: "Vrăjitoarele mă folosesc..."
         },
         marker5: {
-          question: "Fire-breathing beast with scales of might. What legendary creature am I?",
+          question: "Fiară care sufla foc cu solzi puternici. Ce creatură legendară sunt eu?",
           answer: "dragon",
-          hint: "I guard treasure..."
+          hint: "Păzesc comori..."
         },
         marker6: {
-          question: "Forged in battle, a blade of legend. What weapon drops from the dragon?",
-          answer: "sword",
-          hint: "A warrior's prize..."
+          question: "Forjată în bătălie, o lamă de legendă. Ce armă cade de la dragon?",
+          answer: "sabie",
+          hint: "Premiul unui războinic..."
         },
         marker7: {
-          question: "Where heroes sit after victory is won. What seat of power awaits?",
-          answer: "throne",
-          hint: "A king's seat..."
+          question: "Unde stau eroii după ce victoria e câștigată. Ce scaun de putere așteaptă?",
+          answer: "tron",
+          hint: "Scaunul unui rege..."
         }
       },
       currentPuzzle: null,
@@ -442,7 +442,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => {
         document.getElementById('loadingScreen').classList.add('hide');
-        showMessage("🧙 A wise wizard awaits with tales of legend...", 3000);
+        showMessage("🧙 Un vrăjitor înțelept așteaptă cu povești de legendă...", 3000);
       }, 2000);
     });
 
@@ -465,7 +465,7 @@
     function handleMarkerFound(markerId) {
       // Check if already scanned
       if (gameState.scannedMarkers.has(markerId)) {
-        showMessage("✓ Already scanned!", 2000);
+        showMessage("✓ Deja scanat!", 2000);
         return;
       }
 
@@ -473,7 +473,7 @@
       const expectedNext = gameState.currentSequence[gameState.scannedMarkers.size];
       
       if (markerId !== expectedNext) {
-        showMessage(`❌ Wrong marker! Scan in the correct order.`, 2500);
+        showMessage(`❌ Marker greșit! Scanează în ordinea corectă.`, 2500);
         return;
       }
 
@@ -488,23 +488,23 @@
       revealMarkerObject(markerId);
       
       // Show success message
-      showMessage(`✓ ${getMarkerName(markerId)} unlocked!`, 2000);
+      showMessage(`✓ ${getMarkerName(markerId)} deblocat!`, 2000);
       
       // Check if game is complete
       if (gameState.scannedMarkers.size === 7) {
         setTimeout(() => {
-          showMessage("🎉 Victory! You are the Dragon Slayer! 👑🐉⚔️", 5000);
+          showMessage("🎉 Victorie! Ești Ucigașul de Dragoni! 👑🐉⚔️", 5000);
         }, 2500);
       } else {
         // Show cryptic hint for next marker
         setTimeout(() => {
           const hints = {
-            'marker1': '📜 "Seek the ancient tome where dragon secrets are written..."',
-            'marker2': '🎯 "A hunter needs a weapon that strikes from afar..."',
-            'marker3': '🧪 "To summon the beast, brew the mystic elixir..."',
-            'marker4': '🐉 "The potion is ready. The dragon awaits your challenge..."',
-            'marker5': '⚔️ "From the fallen beast, claim your legendary reward..."',
-            'marker6': '👑 "The victor\'s seat awaits. Take your rightful throne..."'
+            'marker1': '📜 "Caută tomul străvechi unde sunt scrise secretele dragonului..."',
+            'marker2': '🎯 "Un vânător are nevoie de o armă care lovește de la distanță..."',
+            'marker3': '🧪 "Pentru a chema fiara, prepară elixirul mistic..."',
+            'marker4': '🐉 "Poțiunea este gata. Dragonul așteaptă provocarea ta..."',
+            'marker5': '⚔️ "Din fiara căzută, revendică răsplata ta legendară..."',
+            'marker6': '👑 "Scaunul victoriosului te așteaptă. Ia-ți tronul de drept..."'
           };
           const nextHint = hints[markerId];
           if (nextHint) {
@@ -545,21 +545,21 @@
         revealMarkerObject(markerId);
         
         // Show success message
-        showMessage(`✓ Correct! ${getMarkerName(markerId)} unlocked!`, 3000);
+        showMessage(`✓ Corect! ${getMarkerName(markerId)} deblocat!`, 3000);
         
         // Check if game is complete
         if (gameState.scannedMarkers.size === 7) {
           setTimeout(() => {
-            showMessage("🎉 Victory! You are the Dragon Slayer! 👑🐉⚔️", 5000);
+            showMessage("🎉 Victorie! Ești Ucigașul de Dragoni! 👑🐉⚔️", 5000);
           }, 3000);
         } else {
           setTimeout(() => {
-            showMessage(`Next: Scan ${getMarkerName(gameState.currentSequence[gameState.scannedMarkers.size])}`, 3000);
+            showMessage(`Următor: Scanează ${getMarkerName(gameState.currentSequence[gameState.scannedMarkers.size])}`, 3000);
           }, 3500);
         }
       } else {
         // Wrong answer
-        showMessage(`❌ Wrong answer! Hint: ${gameState.puzzles[markerId].hint}`, 3000);
+        showMessage(`❌ Răspuns greșit! Indiciu: ${gameState.puzzles[markerId].hint}`, 3000);
       }
     }
 
@@ -591,13 +591,13 @@
 
     function getMarkerName(markerId) {
       const names = {
-        'marker1': '🗺️ Ancient Map',
-        'marker2': '📖 Legendary Book',
-        'marker3': '🏹 Crossbow',
-        'marker4': '🔮 Cauldron',
-        'marker5': '🐉 Dragon',
-        'marker6': '⚔️ Great Sword',
-        'marker7': '👑 Throne'
+        'marker1': '🗺️ Harta Străveche',
+        'marker2': '📖 Cartea Legendară',
+        'marker3': '🏹 Arbaleta',
+        'marker4': '🔮 Cazanul',
+        'marker5': '🐉 Dragonul',
+        'marker6': '⚔️ Sabia Mare',
+        'marker7': '👑 Tronul'
       };
       return names[markerId] || markerId;
     }
